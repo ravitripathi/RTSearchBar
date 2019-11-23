@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "RTSearchBar", targets: ["RTSearchBar"]),
     ],
     targets: [
-        .target(name: "RTSearchBar")],
+        .target(name: "RTSearchBar",
+                path: "RTSearchBar")],
     swiftLanguageVersions: [.v5]
 )
