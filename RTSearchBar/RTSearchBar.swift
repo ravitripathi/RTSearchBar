@@ -165,6 +165,9 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
         guard let count = self.data?.count, indexPath.row < count else {
             return
         }
+        if let value = self.RSBDataSource?.textToBeShown(forData: data) {
+            self.text = value
+        }
         if let data = self.data?[indexPath.row] {
             self.RSBDelegate?.didSelect(withData: data)
         }
