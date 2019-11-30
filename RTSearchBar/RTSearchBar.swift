@@ -8,13 +8,16 @@
 
 import UIKit
 
-public protocol RSBDelegate {
+public protocol RTSearchBarDelegate: UISearchBarDelegate {
     func didChange(text: String)
     func didEndEditing(text: String)
     func didSelect(withData data: Any)
     func didClear()
-    func didPaste(text: String)
-    
+}
+
+extension RTSearchBarDelegate {
+    func didClear() {}
+    func didEndEditing() {}
 }
 
 public protocol RTSearchBarDataSource {
@@ -25,8 +28,18 @@ public protocol RTSearchBarDataSource {
 @IBDesignable
 open class RTSearchBar: UISearchBar {
     var tableView = UITableView(frame: CGRect.zero)
-    public var RSBDelegate: RSBDelegate?
-    public var RSBDataSource: RTSearchBarDataSource?
+    
+    private var RSBDelegate: RTSearchBarDelegate?
+    override public var delegate: UISearchBarDelegate? {
+        get {
+            return self.RSBDelegate
+        }
+        set {
+            self.RSBDelegate = newValue as! RTSearchBarDelegate?
+        }
+    }
+    
+    public var dataSource: RTSearchBarDataSource?
     var data: [Any]?
     var actualArray: [Any]?
     
@@ -44,7 +57,7 @@ open class RTSearchBar: UISearchBar {
     
     override open func layoutSubviews() {
         super.layoutSubviews()
-        self.data = self.RSBDataSource?.getData()
+        self.data = self.dataSource?.getData()
         createTableView()
     }
     
@@ -57,13 +70,14 @@ open class RTSearchBar: UISearchBar {
     
     @objc open func textFieldDidChange(){
         if let text = self.text?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
-            if text ==  UIPasteboard.general.string {
-                RSBDelegate?.didPaste(text: text)
-                tableView.isHidden = true
-            } else {
+//            Removed did Paste functionality as it can be handled on the implementer's side
+//            if text ==  UIPasteboard.general.string {
+//                RSBDelegate?.didPaste(text: text)
+//                tableView.isHidden = true
+//            } else {
                 RSBDelegate?.didChange(text: text)
                 tableView.isHidden = false
-            }
+//            }
         } else {
             RSBDelegate?.didClear()
             tableView.isHidden = true
@@ -79,26 +93,8 @@ open class RTSearchBar: UISearchBar {
     }
     
     public func reload() {
-        self.setupData(forNewData: RSBDataSource?.getData())
+        self.data = dataSource?.getData()
         self.updateSearchTableView()
-    }
-    
-    func setupData(forNewData newData: [Any]?) {
-        guard let newData = newData else {
-            return
-        }
-        
-        self.data = newData.filter({ (newData) -> Bool in
-            if let value = RSBDataSource?.textToBeShown(forData: newData) {
-                let highlightRange = (value as NSString).range(of: self.text!, options: .caseInsensitive)
-                if highlightRange.location != NSNotFound {
-                    return true
-                } else {
-                    return false
-                }
-            }
-            return false
-        })
     }
     
 }
@@ -152,7 +148,7 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
         guard let data = self.data?[indexPath.row] else {
             return cell
         }
-        if let value = self.RSBDataSource?.textToBeShown(forData: data) {
+        if let value = self.dataSource?.textToBeShown(forData: data) {
             let highlightRange = (value as NSString).range(of: self.text!, options: .caseInsensitive)
             let stringToDisplay = NSMutableAttributedString(string: value)
             stringToDisplay.setAttributes([.font: UIFont.boldSystemFont(ofSize: 17)], range: highlightRange)
@@ -165,10 +161,8 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
         guard let count = self.data?.count, indexPath.row < count else {
             return
         }
-        if let value = self.RSBDataSource?.textToBeShown(forData: data) {
-            self.text = value
-        }
         if let data = self.data?[indexPath.row] {
+            self.text = self.dataSource?.textToBeShown(forData: data)
             self.RSBDelegate?.didSelect(withData: data)
         }
     }
