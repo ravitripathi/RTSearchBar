@@ -45,6 +45,9 @@ public extension RTSearchBarDataSource {
 @IBDesignable
 open class RTSearchBar: UISearchBar {
     
+    
+    @IBInspectable public var cellStyle: String = CellTypes.defaultCell.rawValue
+    
     public var animationDelay = 0.6
     var tableView = UITableView(frame: CGRect.zero)
     
@@ -98,7 +101,10 @@ open class RTSearchBar: UISearchBar {
     }
     
     func createTableView() {
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "AutoCompleteCell")
+        tableView.register(DefaultCell.self, forCellReuseIdentifier: CellTypes.defaultCell.rawValue)
+        tableView.register(Value1Cell.self, forCellReuseIdentifier: CellTypes.value1Cell.rawValue)
+        tableView.register(Value2Cell.self, forCellReuseIdentifier: CellTypes.value2Cell.rawValue)
+        tableView.register(SubtitleCell.self, forCellReuseIdentifier: CellTypes.subtitleCell.rawValue)
         tableView.delegate = self
         tableView.dataSource = self
         self.window?.addSubview(tableView)
@@ -154,7 +160,7 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
     }
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "AutoCompleteCell", for: indexPath) as UITableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: self.cellStyle, for: indexPath) as UITableViewCell
         guard let count = self.data?.count, indexPath.row < count, let data = self.data?[indexPath.row] else {
             return cell
         }
