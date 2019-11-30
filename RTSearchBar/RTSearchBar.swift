@@ -162,6 +162,7 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
             return
         }
         if let data = self.data?[indexPath.row] {
+            tableView.isHidden = true
             self.text = self.dataSource?.textToBeShown(forData: data)
             self.RSBDelegate?.didSelect(withData: data)
         }
