@@ -15,18 +15,37 @@ public protocol RTSearchBarDelegate: UISearchBarDelegate {
     func didClear()
 }
 
-extension RTSearchBarDelegate {
-    func didClear() {}
-    func didEndEditing() {}
+public extension RTSearchBarDelegate {
+    func didClear() {
+        
+    }
+    
+    func didEndEditing(text: String) {
+        
+    }
 }
 
 public protocol RTSearchBarDataSource {
     func getData() -> [Any]?
-    func textToBeShown(forData data: Any) -> String?
+    func textToDisplay(forData data: Any) -> String?
+    func decorate(cell: UITableViewCell, forData data: Any) -> UITableViewCell
+}
+
+public extension RTSearchBarDataSource {
+    
+    func textToDisplay(forData data: Any) -> String? {
+        return nil
+    }
+    
+    func decorate(cell: UITableViewCell, forData data: Any) -> UITableViewCell {
+        return cell
+    }
 }
 
 @IBDesignable
 open class RTSearchBar: UISearchBar {
+    
+    public var animationDelay = 0.6
     var tableView = UITableView(frame: CGRect.zero)
     
     private var RSBDelegate: RTSearchBarDelegate?
@@ -70,14 +89,8 @@ open class RTSearchBar: UISearchBar {
     
     @objc open func textFieldDidChange(){
         if let text = self.text?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
-//            Removed did Paste functionality as it can be handled on the implementer's side
-//            if text ==  UIPasteboard.general.string {
-//                RSBDelegate?.didPaste(text: text)
-//                tableView.isHidden = true
-//            } else {
-                RSBDelegate?.didChange(text: text)
-                tableView.isHidden = false
-//            }
+            RSBDelegate?.didChange(text: text)
+            tableView.isHidden = false
         } else {
             RSBDelegate?.didClear()
             tableView.isHidden = true
@@ -116,7 +129,7 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
         tableViewFrame.origin = self.convert(tableViewFrame.origin, to: nil)
         tableViewFrame.origin.x += 2
         tableViewFrame.origin.y += frame.size.height + 2
-        UIView.animate(withDuration: 0.6, animations: { [weak self] in
+        UIView.animate(withDuration: animationDelay, animations: { [weak self] in
             self?.tableView.frame = tableViewFrame
         })
         
@@ -142,19 +155,16 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "AutoCompleteCell", for: indexPath) as UITableViewCell
-        guard let count = self.data?.count, indexPath.row < count else {
+        guard let count = self.data?.count, indexPath.row < count, let data = self.data?[indexPath.row] else {
             return cell
         }
-        guard let data = self.data?[indexPath.row] else {
-            return cell
-        }
-        if let value = self.dataSource?.textToBeShown(forData: data) {
+        if let value = self.dataSource?.textToDisplay(forData: data) {
             let highlightRange = (value as NSString).range(of: self.text!, options: .caseInsensitive)
             let stringToDisplay = NSMutableAttributedString(string: value)
             stringToDisplay.setAttributes([.font: UIFont.boldSystemFont(ofSize: 17)], range: highlightRange)
             cell.textLabel?.attributedText = stringToDisplay
         }
-        return cell
+        return self.dataSource?.decorate(cell: cell, forData: data) ?? cell
     }
     
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -163,7 +173,7 @@ extension RTSearchBar: UITableViewDelegate, UITableViewDataSource {
         }
         if let data = self.data?[indexPath.row] {
             tableView.isHidden = true
-            self.text = self.dataSource?.textToBeShown(forData: data)
+            self.text = self.dataSource?.textToDisplay(forData: data)
             self.RSBDelegate?.didSelect(withData: data)
         }
     }
